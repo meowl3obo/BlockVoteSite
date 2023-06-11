@@ -98,6 +98,9 @@ const CONTRACT_ABI = [
 	}
 ]
 
+const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
+const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
+
 export const CreateAccount = async (password: string) => {
   const bip39 = require('bip39')
   const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);;
@@ -118,12 +121,14 @@ export const CreateAccount = async (password: string) => {
   const keyStore = await mnemonicToKeyStore(mnemonic, password)
   console.log("---------------------------keyStore---------------------------")
   console.log(keyStore)
-
-  const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
-  const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
-  console.log(contract)
-  // const res = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
+  
+  // @ts-ignore
   const request = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
+  sendRequestToContract(request)
+}
+
+const sendRequestToContract = async (abiData: string) => {
+  const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
   const myAddress = getMyAddress()
   const nonce = await web3Connect.eth.getTransactionCount(myAddress);
   const transaction = {
@@ -131,17 +136,18 @@ export const CreateAccount = async (password: string) => {
     to: CONTRACT_ADDRESS,
     gas: 1000000,
     gasPrice: 10000000000,
-    data: request,
+    data: abiData,
     nonce: nonce,
     value: 0
   }
   web3Connect.eth.accounts.signTransaction(transaction, '0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5').then((signed) => {
     console.log(signed)
     web3Connect.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', receipt => {
-      console.log(receipt)
+      console.log(receipt.transactionHash)
+    }).on('error', err => {
+      console.log(err)
     })
   })
-  // console.log(res)
 }
 
 const getMyAddress = () => {
@@ -213,9 +219,8 @@ export const LoginFromMnemonic = async (mnemonic: string, password: string) => {
   const encryptedMnemonic = `${cipher.update(mnemonic, 'utf-8', 'hex')}${cipher.final('hex')}`
   console.log("---------------------------encryptedMnemonic---------------------------")
   console.log(encryptedMnemonic)
-
-  const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
-  const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
-  const res = contract.methods.login(mnemonic, encryptedMnemonic).encodeABI()
-  console.log(res)
+  
+  // @ts-ignore
+  const request = contract.methods.login(mnemonic, encryptedMnemonic).encodeABI()
+  sendRequestToContract(request)
 }
