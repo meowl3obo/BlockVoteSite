@@ -19,11 +19,9 @@ export default function Test() {
       <div>
         <label htmlFor="login-password">密碼</label>
         <input id="login-password" value={loginPassword} onChange={(e) => setLoginPassword(e.target.value)}></input>
-        <label htmlFor="keystore">keyStore</label>
-        <input id="keystore" value={keyStore} onChange={(e) => setKeyStore(e.target.value)}></input>
       </div>
       <div>
-        <button onClick={() => LoginFromKeyStore(keyStore, loginPassword)}>登入</button>
+        <button onClick={() => LoginFromKeyStore(loginPassword)}>登入</button>
       </div>
       <div>
         <label htmlFor="login-password">密碼</label>

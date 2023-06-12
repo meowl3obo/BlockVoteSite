@@ -103,6 +103,7 @@ const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
 
 export const CreateAccount = async (password: string) => {
   const bip39 = require('bip39')
+  const web3Account = require('web3-eth-accounts')
   const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);;
   const passwordBuffer = Buffer.from(password, 'utf-8')
   const saltBuffer = Buffer.from('salt', 'utf-8')
@@ -118,16 +119,20 @@ export const CreateAccount = async (password: string) => {
   console.log("---------------------------encryptedMnemonic---------------------------")
   console.log(encryptedMnemonic)
 
-  const keyStore = await mnemonicToKeyStore(mnemonic, password)
+  const privateKey = await mnemonicToPrivateKey(mnemonic, password)
+  console.log("---------------------------privateKey---------------------------")
+  console.log(privateKey)
+
+  const keyStore = await web3Account.encrypt(privateKey, password)
   console.log("---------------------------keyStore---------------------------")
-  console.log(keyStore)
+  localStorage.setItem("ks", JSON.stringify(keyStore))
   
   // @ts-ignore
   const request = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
-  sendRequestToContract(request)
+  sendRequestToContract(request, privateKey)
 }
 
-const sendRequestToContract = async (abiData: string) => {
+const sendRequestToContract = async (abiData: string, privateKey: string) => {
   const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
   const myAddress = getMyAddress()
   const nonce = await web3Connect.eth.getTransactionCount(myAddress);
@@ -156,14 +161,12 @@ const getMyAddress = () => {
   return account.address
 }
 
-const mnemonicToKeyStore = async (mnemonic: string, password: string) => {
+const mnemonicToPrivateKey = async (mnemonic: string, password: string): Promise<string> => {
   const bip39 = require('bip39')
   const ethUtil = require('ethereumjs-util');
   const hdKey = require('hdkey')
-  const web3Account = require('web3-eth-accounts')
-  // const crypto = require('crypto')
 
-  const seed = await bip39.mnemonicToSeed(mnemonic, password)
+  const seed = await bip39.mnemonicToSeed(mnemonic)
   console.log("---------------------------seed---------------------------")
   console.log(seed)
 
@@ -175,23 +178,22 @@ const mnemonicToKeyStore = async (mnemonic: string, password: string) => {
   console.log("---------------------------privateKey---------------------------")
   console.log(privateKey)
 
-  const publicKey  = ethUtil.bufferToHex(key._publicKey)
-  console.log("---------------------------publicKey ---------------------------")
-  console.log(publicKey )
+  return privateKey
+}
 
+const privateKeyToAddress = (privateKey: string): string => {
+  const ethUtil = require('ethereumjs-util');
   const address = ethUtil.privateToAddress(Buffer.from(privateKey.replace('0x', ''), 'hex'), true).toString('hex')
   console.log("---------------------------address---------------------------")
   console.log(address)
 
-  const keyStore = await web3Account.encrypt(privateKey, password)
-  console.log("---------------------------keyStore---------------------------")
-  console.log(keyStore)
-
-  return keyStore
+  return address
 }
 
-export const LoginFromKeyStore = async (keyStore: string, password: string) => {
+export const LoginFromKeyStore = async (password: string) => {
   const web3Account = require('web3-eth-accounts')
+  const keyStoreString = localStorage.getItem("ks")
+  const keyStore = keyStoreString ? JSON.parse(keyStoreString) : {}
   try {
     const account = await web3Account.decrypt(keyStore, password)
     console.log("---------------------------account---------------------------")
@@ -205,22 +207,33 @@ export const LoginFromMnemonic = async (mnemonic: string, password: string) => {
   // const web3 = require('web3')
   const web3Account = require('web3-eth-accounts')
 
-  const keyStore = await mnemonicToKeyStore(mnemonic, password)
+  const privateKey = await mnemonicToPrivateKey(mnemonic, password)
+  console.log("---------------------------privateKey---------------------------")
+  console.log(privateKey)
+
+  const keyStore = await web3Account.encrypt(privateKey, password)
+  console.log("---------------------------keyStore---------------------------")
+  localStorage.setItem("ks", JSON.stringify(keyStore))
+
+  localStorage.setItem("ks", keyStore)
   const account = await web3Account.decrypt(keyStore, password)
   console.log("---------------------------account---------------------------")
   console.log(account)
+
+  const transactionCount = await web3Connect.eth.getTransactionCount(account.address)
+  console.log(Number(transactionCount))
   
-  const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);;
-  const passwordBuffer = Buffer.from(password, 'utf-8')
-  const saltBuffer = Buffer.from('salt', 'utf-8')
-  console.log("password:", password)
-  const passwordKey = scrypt.syncScrypt(passwordBuffer, saltBuffer, 16384, 8, 1, 32);
-  const cipher = crypto.createCipheriv('aes-256-cbc', passwordKey, iv)
-  const encryptedMnemonic = `${cipher.update(mnemonic, 'utf-8', 'hex')}${cipher.final('hex')}`
-  console.log("---------------------------encryptedMnemonic---------------------------")
-  console.log(encryptedMnemonic)
+  // const iv = crypto.randomBytes(16).toString('hex').slice(0, 16);;
+  // const passwordBuffer = Buffer.from(password, 'utf-8')
+  // const saltBuffer = Buffer.from('salt', 'utf-8')
+  // console.log("password:", password)
+  // const passwordKey = scrypt.syncScrypt(passwordBuffer, saltBuffer, 16384, 8, 1, 32);
+  // const cipher = crypto.createCipheriv('aes-256-cbc', passwordKey, iv)
+  // const encryptedMnemonic = `${cipher.update(mnemonic, 'utf-8', 'hex')}${cipher.final('hex')}`
+  // console.log("---------------------------encryptedMnemonic---------------------------")
+  // console.log(encryptedMnemonic)
   
-  // @ts-ignore
-  const request = contract.methods.login(mnemonic, encryptedMnemonic).encodeABI()
-  sendRequestToContract(request)
+  // // @ts-ignore
+  // const request = contract.methods.login(mnemonic, encryptedMnemonic).encodeABI()
+  // sendRequestToContract(request)
 }

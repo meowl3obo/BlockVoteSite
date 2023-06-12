@@ -1,6 +1,6 @@
 import Image from 'next/image'
 import Head from "next/head";
-import '@/style/pages/home.scss'
+import style from '@/style/pages/home.module.scss'
 
 Home.title = "123"
 export default function Home() {
@@ -9,11 +9,11 @@ export default function Home() {
       <Head>
         <title>Home Title</title>
       </Head>
-      <main className="main">
-        <div className="description">
+      <main className={style.main}>
+        <div className={style.description}>
           <p>
             Get started by editing rrrr&nbsp;
-            <code className="code">app/page.tsx</code>
+            <code className={style.code}>app/page.tsx</code>
           </p>
           <div>
             <a
@@ -25,7 +25,7 @@ export default function Home() {
               <Image
                 src="/vercel.svg"
                 alt="Vercel Logo"
-                className="vercelLogo"
+                className={style.vercelLogo}
                 width={100}
                 height={24}
                 priority
@@ -34,9 +34,9 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="center">
+        <div className={style.center}>
           <Image
-            className="logo"
+            className={style.logo}
             src="/next.svg"
             alt="Next.js Logo"
             width={180}
@@ -45,10 +45,10 @@ export default function Home() {
           />
         </div>
 
-        <div className="grid">
+        <div className={style.grid}>
           <a
             href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            className="card"
+            className={style.card}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -60,7 +60,7 @@ export default function Home() {
 
           <a
             href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            className="card"
+            className={style.card}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -72,7 +72,7 @@ export default function Home() {
 
           <a
             href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            className="card"
+            className={style.card}
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -84,7 +84,7 @@ export default function Home() {
 
           <a
             href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            className="card"
+            className={style.card}
             target="_blank"
             rel="noopener noreferrer"
           >
