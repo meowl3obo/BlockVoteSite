@@ -2,11 +2,10 @@
 import web3 from 'web3'
 import crypto from 'crypto'
 import scrypt from 'scrypt-js'
-import { ITransaction, IEvaluateGas } from '@/types/web3'
+import { ITransaction } from '@/types/web3'
 import { EvaluateGas, EnsureBalance, SendTradRequest, PrivateKeyToAddress } from './index'
 
-const KEY_PATH = "m/44'/60'/0'/0/0"
-const CONTRACT_ADDRESS = "0xB7ee4b8b8FaA835c734562076D4e60Aec407dD78"
+const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USER_CONTRACT_ADDRESS ?? ""
 const CONTRACT_ABI = [
 	{
 		"inputs": [
@@ -99,7 +98,7 @@ const CONTRACT_ABI = [
 	}
 ]
 
-const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
+const web3Connect = new web3(process.env.NEXT_PUBLIC_ETH_NODE_URL)
 const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
 
 export const CreateAccount = async (password: string) => {

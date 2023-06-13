@@ -2,8 +2,8 @@
 import web3 from 'web3'
 import { ITransaction, IEvaluateGas } from '@/types/web3'
 
-const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
-const OWNER_PRIVATE_KEY = '0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5'
+const web3Connect = new web3(process.env.NEXT_PUBLIC_ETH_NODE_URL)
+const OWNER_PRIVATE_KEY = process.env.NEXT_PUBLIC_OWNER_PRIVATE_KEY ?? ""
 
 export const EvaluateGas = async (transaction: ITransaction): Promise<IEvaluateGas> => {
   console.log(transaction)
