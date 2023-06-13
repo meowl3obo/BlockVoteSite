@@ -123,13 +123,13 @@ export const CreateAccount = async (password: string) => {
   const privateKey = await mnemonicToPrivateKey(mnemonic, password)
   console.log("---------------------------privateKey---------------------------")
   console.log(privateKey)
-
-  const keyStore = await web3Account.encrypt(privateKey, password)
-  localStorage.setItem("ks", JSON.stringify(keyStore))
   
   // @ts-ignore
   const request = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
   toRegisterContract(request, privateKey)
+
+  const keyStore = await web3Account.encrypt(privateKey, password)
+  localStorage.setItem("ks", JSON.stringify(keyStore))
 }
 
 const toRegisterContract =  async (abiData: string, privateKey: string) => {
@@ -148,7 +148,10 @@ const toRegisterContract =  async (abiData: string, privateKey: string) => {
   transaction.gasPrice = gasPrice
 
   await EnsureBalance(requestAddress, transactionCost)
-  SendTradRequest(transaction, privateKey)
+  setTimeout(() => {
+    SendTradRequest(transaction, privateKey)
+  }, 60000)
+  // SendTradRequest(transaction, privateKey)
 }
 
 const sendRequestToContract = async (abiData: string, privateKey: string) => {
