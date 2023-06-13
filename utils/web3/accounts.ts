@@ -3,6 +3,8 @@ import a from 'ethereumjs-util'
 import web3 from 'web3'
 import crypto from 'crypto'
 import scrypt from 'scrypt-js'
+import { ITransaction, IEvaluateGas } from '@/types/web3'
+import { EvaluateGas, EnsureBalance, SendTradRequest, PrivateKeyToAddress } from './index'
 
 const KEY_PATH = "m/44'/60'/0'/0/0"
 const CONTRACT_ADDRESS = "0xB7ee4b8b8FaA835c734562076D4e60Aec407dD78"
@@ -124,43 +126,59 @@ export const CreateAccount = async (password: string) => {
   console.log(privateKey)
 
   const keyStore = await web3Account.encrypt(privateKey, password)
-  console.log("---------------------------keyStore---------------------------")
   localStorage.setItem("ks", JSON.stringify(keyStore))
   
   // @ts-ignore
   const request = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
-  sendRequestToContract(request, privateKey)
+  toRegisterContract(request, privateKey)
+}
+
+const toRegisterContract =  async (abiData: string, privateKey: string) => {
+  const requestAddress = PrivateKeyToAddress(privateKey)
+  console.log(requestAddress)
+  const nonce = await web3Connect.eth.getTransactionCount(requestAddress);
+  const transaction: ITransaction = {
+    from: requestAddress,
+    to: CONTRACT_ADDRESS,
+    data: abiData,
+    nonce: nonce,
+  }
+
+  const { gas, gasPrice, transactionCost } = await EvaluateGas(transaction)
+  transaction.gas = gas
+  transaction.gasPrice = gasPrice
+
+  await EnsureBalance(requestAddress, transactionCost)
+  SendTradRequest(transaction, privateKey)
 }
 
 const sendRequestToContract = async (abiData: string, privateKey: string) => {
-  const web3Connect = new web3('https://goerli.infura.io/v3/72b22d776e7740ee9f9331a7428933b9')
-  const myAddress = getMyAddress()
-  const nonce = await web3Connect.eth.getTransactionCount(myAddress);
-  const transaction = {
-    from: myAddress,
+  // const myAddress = getOwnerAddress()
+  const requestAddress = PrivateKeyToAddress(privateKey)
+  console.log(requestAddress)
+  const nonce = await web3Connect.eth.getTransactionCount(requestAddress);
+  const transaction: ITransaction = {
+    from: requestAddress,
     to: CONTRACT_ADDRESS,
-    gas: 1000000,
-    gasPrice: 10000000000,
     data: abiData,
     nonce: nonce,
-    value: 0
   }
-  web3Connect.eth.accounts.signTransaction(transaction, '0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5').then((signed) => {
-    console.log(signed)
-    web3Connect.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', receipt => {
-      console.log(receipt.transactionHash)
-    }).on('error', err => {
-      console.log(err)
-    })
-  })
-}
 
-const getMyAddress = () => {
-  const web3Account = require('web3-eth-accounts')
-  const account = web3Account.privateKeyToAccount('0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5');
-  return account.address
-}
+  const { gas, gasPrice, transactionCost } = await EvaluateGas(transaction)
+  transaction.gas = gas
+  transaction.gasPrice = gasPrice
 
+  await EnsureBalance(requestAddress, transactionCost)
+  // web3Connect.eth.accounts.signTransaction(transaction, '0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5').then((signed) => {
+  // web3Connect.eth.accounts.signTransaction(transaction, privateKey).then((signed) => {
+  //   console.log(signed)
+  //   web3Connect.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', receipt => {
+  //     console.log(receipt.transactionHash)
+  //   }).on('error', err => {
+  //     console.log(err)
+  //   })
+  // })
+}
 const mnemonicToPrivateKey = async (mnemonic: string, password: string): Promise<string> => {
   const bip39 = require('bip39')
   const ethUtil = require('ethereumjs-util');
@@ -179,15 +197,6 @@ const mnemonicToPrivateKey = async (mnemonic: string, password: string): Promise
   console.log(privateKey)
 
   return privateKey
-}
-
-const privateKeyToAddress = (privateKey: string): string => {
-  const ethUtil = require('ethereumjs-util');
-  const address = ethUtil.privateToAddress(Buffer.from(privateKey.replace('0x', ''), 'hex'), true).toString('hex')
-  console.log("---------------------------address---------------------------")
-  console.log(address)
-
-  return address
 }
 
 export const LoginFromKeyStore = async (password: string) => {
