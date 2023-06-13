@@ -1,105 +1,9 @@
-// import web3Account from 'web3-eth-accounts'
 import web3 from 'web3'
 import crypto from 'crypto'
 import scrypt from 'scrypt-js'
-import { ITransaction } from '@/types/web3'
-import { EvaluateGas, EnsureBalance, SendTradRequest, PrivateKeyToAddress } from './index'
-
-const CONTRACT_ADDRESS = process.env.NEXT_PUBLIC_USER_CONTRACT_ADDRESS ?? ""
-const CONTRACT_ABI = [
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "mnemonic",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "hashMnemonic",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			}
-		],
-		"name": "register",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [],
-		"stateMutability": "nonpayable",
-		"type": "constructor"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "mnemonic",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "hashMnemonic",
-				"type": "string"
-			}
-		],
-		"name": "updateHashMnemonic",
-		"outputs": [],
-		"stateMutability": "nonpayable",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "mnemonic",
-				"type": "string"
-			}
-		],
-		"name": "getEmail",
-		"outputs": [
-			{
-				"internalType": "string",
-				"name": "email",
-				"type": "string"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	},
-	{
-		"inputs": [
-			{
-				"internalType": "string",
-				"name": "mnemonic",
-				"type": "string"
-			},
-			{
-				"internalType": "string",
-				"name": "hashMnemonic",
-				"type": "string"
-			}
-		],
-		"name": "login",
-		"outputs": [
-			{
-				"internalType": "bool",
-				"name": "isSuccess",
-				"type": "bool"
-			}
-		],
-		"stateMutability": "view",
-		"type": "function"
-	}
-]
+import { ToRegisterContract } from './contract/user'
 
 const web3Connect = new web3(process.env.NEXT_PUBLIC_ETH_NODE_URL)
-const contract = new web3Connect.eth.Contract(CONTRACT_ABI, CONTRACT_ADDRESS)
 
 export const CreateAccount = async (password: string) => {
   const bip39 = require('bip39')
@@ -119,79 +23,14 @@ export const CreateAccount = async (password: string) => {
   console.log("---------------------------encryptedMnemonic---------------------------")
   console.log(encryptedMnemonic)
 
-  const privateKey = await mnemonicToPrivateKey(mnemonic, password)
+  const privateKey = await mnemonicToPrivateKey(mnemonic)
   console.log("---------------------------privateKey---------------------------")
   console.log(privateKey)
-  
-  // @ts-ignore
-  const request = contract.methods.register(mnemonic, encryptedMnemonic, "asd@asd.asd").encodeABI()
-  toRegisterContract(request, privateKey)
+
+  ToRegisterContract(mnemonic, encryptedMnemonic, "asd@asd.asd", privateKey)
 
   const keyStore = await web3Account.encrypt(privateKey, password)
   localStorage.setItem("ks", JSON.stringify(keyStore))
-}
-
-const toRegisterContract =  async (abiData: string, privateKey: string) => {
-  const requestAddress = PrivateKeyToAddress(privateKey)
-  console.log(requestAddress)
-  const nonce = await web3Connect.eth.getTransactionCount(requestAddress);
-  const transaction: ITransaction = {
-    from: requestAddress,
-    to: CONTRACT_ADDRESS,
-    data: abiData,
-    nonce: nonce,
-  }
-
-  const { gas, gasPrice, transactionCost } = await EvaluateGas(transaction)
-  transaction.gas = gas
-  transaction.gasPrice = gasPrice
-
-  await EnsureBalance(requestAddress, transactionCost)
-  setTimeout(() => {
-    SendTradRequest(transaction, privateKey)
-  }, 60000)
-  // SendTradRequest(transaction, privateKey)
-}
-
-const sendRequestToContract = async (abiData: string, privateKey: string) => {
-  // const myAddress = getOwnerAddress()
-  const requestAddress = PrivateKeyToAddress(privateKey)
-  console.log(requestAddress)
-  const nonce = await web3Connect.eth.getTransactionCount(requestAddress);
-  const transaction: ITransaction = {
-    from: requestAddress,
-    to: CONTRACT_ADDRESS,
-    data: abiData,
-    nonce: nonce,
-  }
-
-  const { gas, gasPrice, transactionCost } = await EvaluateGas(transaction)
-  transaction.gas = gas
-  transaction.gasPrice = gasPrice
-
-  await EnsureBalance(requestAddress, transactionCost)
-  // web3Connect.eth.accounts.signTransaction(transaction, '0xfe05ddeeaffc8da3e503790d506f79ff9c24f81b214c27c64eb4098d2a10e8b5').then((signed) => {
-  // web3Connect.eth.accounts.signTransaction(transaction, privateKey).then((signed) => {
-  //   console.log(signed)
-  //   web3Connect.eth.sendSignedTransaction(signed.rawTransaction).on('receipt', receipt => {
-  //     console.log(receipt.transactionHash)
-  //   }).on('error', err => {
-  //     console.log(err)
-  //   })
-  // })
-}
-const mnemonicToPrivateKey = async (mnemonic: string, password: string): Promise<string> => {
-  const bip39 = require('bip39')
-
-  const seed = await bip39.mnemonicToSeed(mnemonic)
-  console.log("---------------------------seed---------------------------")
-  console.log(seed)
-
-  const privateKey = seed.slice(0, 32).toString('hex')
-  console.log("---------------------------privateKey---------------------------")
-  console.log(privateKey)
-
-  return `0x${privateKey}`
 }
 
 export const LoginFromKeyStore = async (password: string) => {
@@ -208,10 +47,9 @@ export const LoginFromKeyStore = async (password: string) => {
 }
 
 export const LoginFromMnemonic = async (mnemonic: string, password: string) => {
-  // const web3 = require('web3')
   const web3Account = require('web3-eth-accounts')
 
-  const privateKey = await mnemonicToPrivateKey(mnemonic, password)
+  const privateKey = await mnemonicToPrivateKey(mnemonic)
   console.log("---------------------------privateKey---------------------------")
   console.log(privateKey)
 
@@ -240,4 +78,18 @@ export const LoginFromMnemonic = async (mnemonic: string, password: string) => {
   // // @ts-ignore
   // const request = contract.methods.login(mnemonic, encryptedMnemonic).encodeABI()
   // sendRequestToContract(request)
+}
+
+const mnemonicToPrivateKey = async (mnemonic: string): Promise<string> => {
+  const bip39 = require('bip39')
+
+  const seed = await bip39.mnemonicToSeed(mnemonic)
+  console.log("---------------------------seed---------------------------")
+  console.log(seed)
+
+  const privateKey = seed.slice(0, 32).toString('hex')
+  console.log("---------------------------privateKey---------------------------")
+  console.log(privateKey)
+
+  return `0x${privateKey}`
 }

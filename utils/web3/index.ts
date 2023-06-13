@@ -20,7 +20,6 @@ export const EvaluateGas = async (transaction: ITransaction): Promise<IEvaluateG
 export const EnsureBalance = async (address: string, transactionCost: number) => {
   const balanceBigint = await web3Connect.eth.getBalance(address)
   const balance = Number(balanceBigint)
-  console.log(10)
   console.log(balance, transactionCost)
   if (balance <= transactionCost) {
     await StoreBalance(address, transactionCost)
@@ -29,9 +28,7 @@ export const EnsureBalance = async (address: string, transactionCost: number) =>
 
 export const StoreBalance = async (address: string, transactionCost: number) => {
   const ownerAddress = PrivateKeyToAddress(OWNER_PRIVATE_KEY)
-  console.log(1)
   const nonce = await web3Connect.eth.getTransactionCount(ownerAddress);
-  console.log(12)
   const transaction: ITransaction = {
     from: ownerAddress,
     to: address,
@@ -39,14 +36,12 @@ export const StoreBalance = async (address: string, transactionCost: number) => 
     value: web3Connect.utils.toWei(transactionCost * 1.1, 'ether')
   }
   const { gas, gasPrice } = await EvaluateGas(transaction)
-  console.log(3)
   transaction.gas = gas
   transaction.gasPrice = gasPrice
   SendTradRequest(transaction, OWNER_PRIVATE_KEY)
 }
 
 export const SendTradRequest = async (transaction: ITransaction, privateKey: string) => {
-  console.log(4)
   console.log(transaction, privateKey)
   web3Connect.eth.accounts.signTransaction(transaction, privateKey).then((signed) => {
     console.log(signed)
