@@ -1,5 +1,4 @@
 // import web3Account from 'web3-eth-accounts'
-import a from 'ethereumjs-util'
 import web3 from 'web3'
 import crypto from 'crypto'
 import scrypt from 'scrypt-js'
@@ -181,22 +180,16 @@ const sendRequestToContract = async (abiData: string, privateKey: string) => {
 }
 const mnemonicToPrivateKey = async (mnemonic: string, password: string): Promise<string> => {
   const bip39 = require('bip39')
-  const ethUtil = require('ethereumjs-util');
-  const hdKey = require('hdkey')
 
   const seed = await bip39.mnemonicToSeed(mnemonic)
   console.log("---------------------------seed---------------------------")
   console.log(seed)
 
-  const key = hdKey.fromMasterSeed(seed)
-  console.log("---------------------------key---------------------------")
-  console.log(key)
-
-  const privateKey = ethUtil.bufferToHex(key._privateKey)
+  const privateKey = seed.slice(0, 32).toString('hex')
   console.log("---------------------------privateKey---------------------------")
   console.log(privateKey)
 
-  return privateKey
+  return `0x${privateKey}`
 }
 
 export const LoginFromKeyStore = async (password: string) => {
